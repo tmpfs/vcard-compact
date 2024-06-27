@@ -46,7 +46,7 @@ pub(crate) enum Token {
     #[token("\"")]
     DoubleQuote,
 
-    #[regex("(?i:LANGUAGE|VALUE|PREF|ALTID|PID|TYPE|MEDIATYPE|CALSCALE|SORT-AS|LABEL|ENCODING)")]
+    #[regex("(?i:LANGUAGE|VALUE|PREF|ALTID|PID|TYPE|MEDIATYPE|CALSCALE|SORT-AS|CHARSET|LABEL|ENCODING)")]
     ParameterKey,
 
     #[token("=")]
@@ -202,12 +202,7 @@ impl<'s> VcardParser<'s> {
             if delimiter == Ok(Token::ParameterDelimiter) {
                 let parameters = self.parse_parameters(lex, name)?;
                 self.parse_property_by_name(
-                    lex,
-                    token,
-                    card,
-                    name,
-                    Some(parameters),
-                    group,
+                    lex, token, card, name, parameters, group,
                 )?;
             } else if delimiter == Ok(Token::PropertyDelimiter) {
                 self.parse_property_by_name(
@@ -244,7 +239,7 @@ impl<'s> VcardParser<'s> {
         &self,
         lex: &mut Lexer<'_, Token>,
         name: &str,
-    ) -> Result<Parameters> {
+    ) -> Result<Option<Parameters>> {
         let property_upper_name = name.to_uppercase();
         let mut params: Parameters = Default::default();
         let mut next: Option<LexResult<Token>> = lex.next();
@@ -372,6 +367,13 @@ impl<'s> VcardParser<'s> {
                                 }
                             }
                         }
+                        CHARSET => {
+                            // Ignore CHARSET=UTF-8 for compatibility with software that
+                            // unnecessarily (and in spite of RFC 6350) adds this parameter.
+                            if value != "UTF-8" {
+                                return Err(Error::CharsetParameter(value));
+                            }
+                        }
                         LABEL => {
                             if property_upper_name != ADR {
                                 return Err(Error::InvalidLabel(
@@ -406,7 +408,11 @@ impl<'s> VcardParser<'s> {
                 return Err(Error::UnknownParameter(lex.slice().to_string()));
             }
         }
-        Ok(params)
+        if params == Parameters::default() {
+            Ok(None)
+        } else {
+            Ok(Some(params))
+        }
     }
 
     /// Parse the raw value for a property parameter.

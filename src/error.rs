@@ -184,4 +184,8 @@ pub enum Error {
     /// Error generated during lexing.
     #[error(transparent)]
     LexError(#[from] LexError),
+
+    /// Error generated when a CHARSET other than UTF-8 is specified.
+    #[error("CHARSET='{0}' is invalid, expected UTF-8")]
+    CharsetParameter(String),
 }

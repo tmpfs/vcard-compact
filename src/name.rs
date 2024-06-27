@@ -58,6 +58,9 @@ pub(crate) const SORT_AS: &str = "SORT-AS";
 // NOTE: we use GEO from the property names
 // NOTE: we use TZ from the property names
 pub(crate) const LABEL: &str = "LABEL";
+// RFC 6350 removed the CHARSET parameter because it requires UTF-8, but some
+// implementations still emit CHARSET=UTF-8. This is the only value we allow.
+pub(crate) const CHARSET: &str = "CHARSET";
 
 // Apple uses this for embedded photos
 pub(crate) const ENCODING: &str = "ENCODING";

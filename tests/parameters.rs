@@ -9,7 +9,7 @@ use vcard4::{
         Pid, RelatedType, TelephoneType, TimeZoneParameter, TypeParameter,
         ValueType,
     },
-    parse,
+    parse, Error,
 };
 
 use test_helpers::{assert_language, assert_media_type, assert_round_trip};
@@ -324,6 +324,37 @@ END:VCARD"#;
         prop.parameters.as_ref().unwrap().timezone.as_ref().unwrap()
     );
     assert_round_trip(&card)?;
+
+    Ok(())
+}
+
+#[test]
+fn param_charset() -> Result<()> {
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN;CHARSET=UTF-8:Jane Doe
+ORG:Some Organization
+TITLE;CHARSET=UTF-8:External employee
+KIND:individual
+N;CHARSET=UTF-8:Doe;Jane;;;
+END:VCARD"#;
+    let mut vcards = parse(input)?;
+    assert_eq!(1, vcards.len());
+    let card = vcards.remove(0);
+    let prop = card.formatted_name.get(0).unwrap();
+    assert_eq!("Jane Doe", prop.value,);
+    assert_round_trip(&card)?;
+
+    let input = r#"BEGIN:VCARD
+VERSION:4.0
+FN;CHARSET=ISO-8859-1:Jane Doe
+N;CHARSET=UTF-8:Doe;Jane;;;
+END:VCARD"#;
+    let err = parse(input).expect_err("Non-UTF-8 CHARSET should fail");
+    assert!(
+        matches!(&err, Error::CharsetParameter(x) if x == "ISO-8859-1"),
+        "Unexpected error: {err:?}"
+    );
 
     Ok(())
 }
