@@ -202,7 +202,12 @@ impl<'s> VcardParser<'s> {
             if delimiter == Ok(Token::ParameterDelimiter) {
                 let parameters = self.parse_parameters(lex, name)?;
                 self.parse_property_by_name(
-                    lex, token, card, name, parameters, group,
+                    lex,
+                    token,
+                    card,
+                    name,
+                    Some(parameters),
+                    group,
                 )?;
             } else if delimiter == Ok(Token::PropertyDelimiter) {
                 self.parse_property_by_name(
@@ -239,7 +244,7 @@ impl<'s> VcardParser<'s> {
         &self,
         lex: &mut Lexer<'_, Token>,
         name: &str,
-    ) -> Result<Option<Parameters>> {
+    ) -> Result<Parameters> {
         let property_upper_name = name.to_uppercase();
         let mut params: Parameters = Default::default();
         let mut next: Option<LexResult<Token>> = lex.next();
@@ -408,11 +413,7 @@ impl<'s> VcardParser<'s> {
                 return Err(Error::UnknownParameter(lex.slice().to_string()));
             }
         }
-        if params == Parameters::default() {
-            Ok(None)
-        } else {
-            Ok(Some(params))
-        }
+        Ok(params)
     }
 
     /// Parse the raw value for a property parameter.

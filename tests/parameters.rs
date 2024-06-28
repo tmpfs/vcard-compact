@@ -338,12 +338,24 @@ TITLE;CHARSET=UTF-8:External employee
 KIND:individual
 N;CHARSET=UTF-8:Doe;Jane;;;
 END:VCARD"#;
+
+    let expected = r#"BEGIN:VCARD
+VERSION:4.0
+KIND:individual
+FN:Jane Doe
+N:Doe;Jane;;;
+TITLE:External employee
+ORG:Some Organization
+END:VCARD
+"#
+    .replace('\n', "\r\n");
+
     let mut vcards = parse(input)?;
     assert_eq!(1, vcards.len());
     let card = vcards.remove(0);
     let prop = card.formatted_name.get(0).unwrap();
     assert_eq!("Jane Doe", prop.value,);
-    assert_round_trip(&card)?;
+    assert_eq!(expected, card.to_string());
 
     let input = r#"BEGIN:VCARD
 VERSION:4.0
